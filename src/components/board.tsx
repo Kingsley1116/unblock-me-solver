@@ -125,7 +125,7 @@ export function Board({
             if (isPreview && !block) {
               cellBg = previewBlockId
                 ? getBlockColor(previewBlockId, false)
-                : 'bg-blue-400/40';
+                : 'bg-amber-400/40';
             }
 
             let shadowClass = '';
@@ -144,7 +144,7 @@ export function Board({
                   ${animated ? 'transition-all duration-300' : ''}
                   ${block ? 'cursor-pointer hover:brightness-110' : ''}
                   ${isHighlighted ? 'ring-2 ring-white ring-offset-1 ring-offset-zinc-400 dark:ring-offset-zinc-600 z-10 scale-105' : ''}
-                  ${isPreview && !block ? 'opacity-60 ring-1 ring-blue-400 dark:ring-blue-300' : ''}
+                  ${isPreview && !block ? 'opacity-60 ring-1 ring-amber-400 dark:ring-amber-300 animate-pulse' : ''}
                   ${isExit && !block ? 'border-2 border-dashed border-zinc-400 dark:border-zinc-500 bg-transparent' : ''}
                 `}
                 style={{ width: cellSize, height: cellSize }}

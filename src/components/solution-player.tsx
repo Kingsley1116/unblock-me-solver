@@ -20,11 +20,23 @@ const SPEED_MS: Record<Speed, number> = {
   4: 125,
 };
 
-const speedButtons: { label: string; speed: Speed }[] = [
+const speedOptions: { label: string; speed: Speed }[] = [
   { label: '0.5x', speed: 0.5 },
   { label: '1x', speed: 1 },
   { label: '2x', speed: 2 },
   { label: '4x', speed: 4 },
+];
+
+const DIRECTION_ARROW: Record<string, string> = {
+  left: '←',
+  right: '→',
+  up: '↑',
+  down: '↓',
+};
+
+const CONFETTI_COLORS = [
+  '#f59e0b', '#10b981', '#3b82f6', '#ef4444', '#8b5cf6',
+  '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16',
 ];
 
 export function SolutionPlayer({ solution, initialBlocks, onBlocksUpdate }: SolutionPlayerProps) {
@@ -207,6 +219,7 @@ export function SolutionPlayer({ solution, initialBlocks, onBlocksUpdate }: Solu
 
   const totalSteps = solution.moves.length;
   const progress = totalSteps > 0 ? (stepIndex / totalSteps) * 100 : 100;
+  const isComplete = stepIndex === totalSteps && totalSteps > 0;
   const currentMove = stepIndex > 0 && stepIndex <= totalSteps
     ? solution.moves[stepIndex - 1]
     : null;
@@ -216,117 +229,233 @@ export function SolutionPlayer({ solution, initialBlocks, onBlocksUpdate }: Solu
     ? (() => {
         const prevBlocks = stepIndex > 1 ? states[stepIndex - 1] : initialBlocks;
         const block = prevBlocks.find((b) => b.id === currentMove.blockId);
-        if (!block) return 'Move block';
+        if (!block) return null;
         const name = getBlockName(block.id, block.isGoal);
-        const dirMap: Record<string, string> = {
-          left: 'left', right: 'right', up: 'up', down: 'down',
-        };
-        const dirName = dirMap[currentMove.direction];
+        const arrow = DIRECTION_ARROW[currentMove.direction] ?? currentMove.direction;
         const stepText = currentMove.steps === 1 ? '1 cell' : `${currentMove.steps} cells`;
-        return `Move ${name} ${dirName} ${stepText}`;
+        return { name, arrow, stepText, blockId: currentMove.blockId, isGoal: block.isGoal };
       })()
     : null;
+
+  // Generate confetti pieces deterministically from step count
+  const confettiPieces = useMemo(() => {
+    const pieces: { left: string; color: string; delay: string; animClass: string }[] = [];
+    for (let i = 0; i < 30; i++) {
+      const left = `${(i * 37 + 11) % 100}%`;
+      const color = CONFETTI_COLORS[i % CONFETTI_COLORS.length];
+      const delay = `${(i * 0.07).toFixed(2)}s`;
+      const animClass = `confetti-${(i % 3) + 1}`;
+      pieces.push({ left, color, delay, animClass });
+    }
+    return pieces;
+  }, []);
 
   return (
     <div className="flex flex-col items-center gap-3 w-full max-w-md mx-auto animate-fade-in">
       {/* Progress bar */}
-      <div className="w-full">
-        <div className="flex justify-between items-center mb-1">
-          <span className="text-xs text-zinc-500 dark:text-zinc-400">
-            Step {stepIndex} / {totalSteps}
-          </span>
-          <span className="text-xs text-zinc-400 dark:text-zinc-500">
+      <div className="w-full space-y-1.5">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-stone-600 dark:text-stone-400 tabular-nums">
+              {stepIndex} / {totalSteps}
+            </span>
+            {isPlaying && (
+              <span className="relative flex h-2 w-2">
+                <span className="animate-auto-pulse absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
+              </span>
+            )}
+          </div>
+          <span className="text-xs text-stone-400 dark:text-stone-500 tabular-nums">
             {totalSteps > 0 ? `${Math.round(progress)}%` : 'Done'}
           </span>
         </div>
-        <div className="w-full h-2 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden">
+        <div className="relative w-full h-2.5 bg-stone-200 dark:bg-stone-700 rounded-full overflow-hidden">
           <div
-            className="h-full bg-blue-500 dark:bg-blue-400 rounded-full transition-all duration-300 ease-out"
-            style={{ width: `${progress}%` }}
+            className={`h-full rounded-full transition-all duration-300 ease-out bg-gradient-to-r from-amber-400 to-amber-600 ${
+              isPlaying ? 'animate-shimmer' : ''
+            }`}
+            style={{
+              width: `${progress}%`,
+              backgroundImage: isPlaying
+                ? 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.35) 50%, transparent 100%), linear-gradient(to right, #f59e0b, #d97706)'
+                : undefined,
+            }}
           />
+          {/* Step marker dots */}
+          {totalSteps > 0 && totalSteps <= 20 && (
+            <div className="absolute inset-0 flex items-center pointer-events-none">
+              {Array.from({ length: totalSteps }, (_, i) => {
+                const dotPos = ((i + 1) / totalSteps) * 100;
+                return (
+                  <div
+                    key={i}
+                    className="absolute w-1 h-1 rounded-full bg-white dark:bg-stone-300 transition-all duration-200"
+                    style={{
+                      left: `calc(${dotPos}% - 2px)`,
+                      opacity: (i + 1) / totalSteps <= progress / 100 ? 1 : 0.3,
+                    }}
+                  />
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
       {/* Move description */}
       {moveDescription && (
-        <p className="text-sm text-zinc-600 dark:text-zinc-400 italic animate-fade-in">
-          {moveDescription}
-        </p>
-      )}
-      {stepIndex === 0 && totalSteps > 0 && (
-        <p className="text-sm text-zinc-400 dark:text-zinc-500 italic">
-          Initial state &mdash; press play to start
-        </p>
-      )}
-      {stepIndex === totalSteps && totalSteps > 0 && (
-        <p className="text-sm text-green-600 dark:text-green-400 font-medium animate-fade-in">
-          Solved! The red car can exit.
-        </p>
-      )}
-
-      {/* Playback controls */}
-      <div className="flex items-center gap-2">
-        <button
-          onClick={handleReset}
-          disabled={stepIndex === 0}
-          className="px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-          title="Reset to start"
+        <div
+          key={stepIndex}
+          className="animate-slide-up-fade inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-stone-700 dark:text-stone-200"
         >
-          &#9198;
-        </button>
-
-        <button
-          onClick={() => goToStep(stepIndex - 1)}
-          disabled={stepIndex === 0}
-          className="px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-          title="Previous step (← arrow key)"
-        >
-          &#9664;
-        </button>
-
-        <button
-          onClick={togglePlay}
-          className="px-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-blue-600 text-white hover:bg-blue-700 transition-all min-w-[52px] shadow-sm"
-          title={isPlaying ? 'Pause (space)' : 'Play (space)'}
-        >
-          {isPlaying ? (
-            <span className="text-sm">&#9646;&#9646;</span>
-          ) : (
-            <span>&#9654;</span>
-          )}
-        </button>
-
-        <button
-          onClick={() => goToStep(stepIndex + 1)}
-          disabled={stepIndex >= totalSteps}
-          className="px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-          title="Next step (→ arrow key)"
-        >
-          &#9654;
-        </button>
-      </div>
-
-      {/* Speed selector */}
-      <div className="flex items-center gap-1 text-xs">
-        <span className="text-zinc-500 dark:text-zinc-400 mr-1">Speed:</span>
-        {speedButtons.map((s) => (
-          <button
-            key={s.speed}
-            onClick={() => setSpeed(s.speed)}
-            className={`px-2 py-1 rounded border transition-all ${
-              speed === s.speed
-                ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                : 'bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-zinc-300 dark:border-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-700'
+          <span
+            className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-white text-xs font-bold ${
+              moveDescription.isGoal ? 'bg-red-500' : 'bg-amber-500'
             }`}
           >
-            {s.label}
-          </button>
-        ))}
+            {moveDescription.blockId}
+          </span>
+          <span className="text-stone-500 dark:text-stone-400">{moveDescription.name}</span>
+          <span className="text-amber-600 dark:text-amber-400 text-base leading-none">
+            {moveDescription.arrow}
+          </span>
+          <span className="text-stone-500 dark:text-stone-400">{moveDescription.stepText}</span>
+        </div>
+      )}
+      {stepIndex === 0 && totalSteps > 0 && (
+        <div className="animate-slide-up-fade inline-flex items-center px-3 py-1.5 rounded-full text-sm bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-stone-500 dark:text-stone-400">
+          Initial state &mdash; press play to start
+        </div>
+      )}
+
+      {/* Completion celebration */}
+      {isComplete && (
+        <div className="relative w-full">
+          {/* Confetti */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ height: '120px', top: '-10px' }}>
+            {confettiPieces.map((piece, i) => (
+              <div
+                key={i}
+                className={`confetti-piece ${piece.animClass}`}
+                style={{
+                  left: piece.left,
+                  backgroundColor: piece.color,
+                  animationDelay: piece.delay,
+                }}
+              />
+            ))}
+          </div>
+          {/* Success banner */}
+          <div className="animate-scale-in flex flex-col items-center gap-1 py-3 px-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
+            <span className="text-2xl">&#127881;</span>
+            <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+              Puzzle Solved!
+            </span>
+            <span className="text-xs text-emerald-600 dark:text-emerald-400">
+              Completed in {totalSteps} {totalSteps === 1 ? 'move' : 'moves'}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Control panel */}
+      <div className="w-full rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm bg-white/80 dark:bg-stone-900/80 backdrop-blur-sm">
+        <div className="flex items-center justify-between px-3 py-2.5 gap-1.5">
+          {/* Navigation controls */}
+          <div className="flex items-center gap-0.5">
+            <button
+              onClick={handleReset}
+              disabled={stepIndex === 0}
+              className="p-2 rounded-lg text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-all"
+              title="Reset to start"
+              aria-label="Reset to start"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z" />
+                <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z" />
+              </svg>
+            </button>
+
+            <button
+              onClick={() => goToStep(stepIndex - 1)}
+              disabled={stepIndex === 0}
+              className="p-2 rounded-lg text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-all"
+              title="Previous step (← arrow key)"
+              aria-label="Previous step"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
+                <path fillRule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z" />
+              </svg>
+            </button>
+
+            <button
+              onClick={togglePlay}
+              className="p-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white shadow-sm transition-all min-w-[36px] flex items-center justify-center"
+              title={isPlaying ? 'Pause (space)' : 'Play (space)'}
+              aria-label={isPlaying ? 'Pause' : 'Play'}
+            >
+              {isPlaying ? (
+                <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
+                  <path d="M5 3.5h2v9H5v-9zm4 0h2v9H9v-9z" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4 ml-0.5" viewBox="0 0 16 16" fill="currentColor">
+                  <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z" />
+                </svg>
+              )}
+            </button>
+
+            <button
+              onClick={() => goToStep(stepIndex + 1)}
+              disabled={stepIndex >= totalSteps}
+              className="p-2 rounded-lg text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-all"
+              title="Next step (→ arrow key)"
+              aria-label="Next step"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
+                <path fillRule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Speed selector */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] font-medium text-stone-400 dark:text-stone-500 uppercase tracking-wider">
+              Speed
+            </span>
+            <div className="flex rounded-lg border border-stone-200 dark:border-stone-700 overflow-hidden">
+              {speedOptions.map((s) => (
+                <button
+                  key={s.speed}
+                  onClick={() => setSpeed(s.speed)}
+                  className={`px-2 py-1 text-xs font-medium transition-all ${
+                    speed === s.speed
+                      ? 'bg-amber-500 text-white shadow-sm'
+                      : 'bg-transparent text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800'
+                  }`}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Keyboard shortcuts hint */}
-      <p className="text-xs text-zinc-400 dark:text-zinc-500">
-        Keyboard: &#8592; &#8594; to step, Space to play/pause
+      {/* Keyboard hints */}
+      <p className="text-[11px] text-stone-400 dark:text-stone-500 flex items-center gap-1.5">
+        <kbd className="inline-flex items-center justify-center h-4 min-w-[16px] px-1 rounded text-[10px] font-mono bg-stone-100 dark:bg-stone-800 border border-stone-300 dark:border-stone-600 text-stone-500 dark:text-stone-400">
+          &#8592;
+        </kbd>
+        <kbd className="inline-flex items-center justify-center h-4 min-w-[16px] px-1 rounded text-[10px] font-mono bg-stone-100 dark:bg-stone-800 border border-stone-300 dark:border-stone-600 text-stone-500 dark:text-stone-400">
+          &#8594;
+        </kbd>
+        <span className="text-stone-400 dark:text-stone-500">to step,</span>
+        <kbd className="inline-flex items-center justify-center h-4 min-w-[20px] px-1 rounded text-[10px] font-mono bg-stone-100 dark:bg-stone-800 border border-stone-300 dark:border-stone-600 text-stone-500 dark:text-stone-400">
+          Space
+        </kbd>
+        <span className="text-stone-400 dark:text-stone-500">to play/pause</span>
       </p>
     </div>
   );

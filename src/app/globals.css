@@ -83,6 +83,20 @@ body::before {
   }
 }
 
+@keyframes bounce-arrow {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(6px);
+  }
+}
+
+.animate-bounce-arrow {
+  animation: bounce-arrow 1.2s ease-in-out infinite;
+}
+
 @keyframes pulse-glow {
   0%,
   100% {

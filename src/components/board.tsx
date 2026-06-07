@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Block } from '@/lib/types';
-import { getBlockColor, getBlockShadow } from './color-utils';
+import { getBlockColor, getBlockGradient } from './color-utils';
 
 const BOARD_SIZE = 6;
 
@@ -95,18 +95,22 @@ export function Board({
 
   return (
     <div
-      className="relative select-none"
-      style={{ width: cellSize * BOARD_SIZE + 10, height: cellSize * BOARD_SIZE + 10 }}
+      className="relative select-none rounded-2xl shadow-lg shadow-amber-900/10 dark:shadow-black/30"
+      style={{
+        width: cellSize * BOARD_SIZE + (BOARD_SIZE - 1) * 3 + 2 * 3,
+        height: cellSize * BOARD_SIZE + (BOARD_SIZE - 1) * 3 + 2 * 3,
+      }}
     >
-      {/* Board background / grid lines */}
+      {/* Board surface with wooden-toned grid lines */}
       <div
-        className="absolute inset-0 rounded-xl bg-zinc-300 dark:bg-zinc-600"
+        className="absolute inset-0 rounded-2xl bg-amber-100/80 dark:bg-amber-900/30"
         style={{
           display: 'grid',
           gridTemplateColumns: `repeat(${BOARD_SIZE}, ${cellSize}px)`,
           gridTemplateRows: `repeat(${BOARD_SIZE}, ${cellSize}px)`,
-          gap: '2px',
-          padding: '2px',
+          gap: '3px',
+          padding: '3px',
+          backgroundImage: `linear-gradient(0deg, rgba(0,0,0,0.02) 0%, transparent 50%, rgba(0,0,0,0.02) 100%)`,
         }}
       >
         {Array.from({ length: BOARD_SIZE }, (_, row) =>
@@ -118,36 +122,40 @@ export function Board({
             const isExit = isGoalExit(row, col);
             const isPreview = previewSet.has(`${row},${col}`);
 
-            let cellBg = 'bg-zinc-100 dark:bg-zinc-800';
+            let cellBg = 'bg-stone-100 dark:bg-stone-800';
+            let cellExtraClasses = '';
             if (block) {
               cellBg = getBlockColor(block.id, block.isGoal);
             }
             if (isPreview && !block) {
               cellBg = previewBlockId
                 ? getBlockColor(previewBlockId, false)
-                : 'bg-blue-400/40';
+                : 'bg-amber-400/40';
+            }
+            // Empty cells get a recessed look
+            if (!block && !isPreview) {
+              cellExtraClasses = 'shadow-[inset_0_2px_4px_rgba(0,0,0,0.12)]';
             }
 
-            let shadowClass = '';
-            if (block) {
-              shadowClass = getBlockShadow(block.id, block.isGoal);
-            }
+            // Build inline gradient style for blocks
+            const blockGradientStyle: React.CSSProperties =
+              block ? getBlockGradient(block.id, block.isGoal) : {};
 
             return (
               <div
                 key={`${row}-${col}`}
                 className={`
-                  ${cellBg}
+                  ${block ? '' : cellBg}
+                  ${cellExtraClasses}
                   ${rounding}
-                  ${shadowClass}
                   flex items-center justify-center relative
                   ${animated ? 'transition-all duration-300' : ''}
                   ${block ? 'cursor-pointer hover:brightness-110' : ''}
-                  ${isHighlighted ? 'ring-2 ring-white ring-offset-1 ring-offset-zinc-400 dark:ring-offset-zinc-600 z-10 scale-105' : ''}
-                  ${isPreview && !block ? 'opacity-60 ring-1 ring-blue-400 dark:ring-blue-300' : ''}
-                  ${isExit && !block ? 'border-2 border-dashed border-zinc-400 dark:border-zinc-500 bg-transparent' : ''}
+                  ${isHighlighted ? 'ring-2 ring-amber-400 ring-offset-1 ring-offset-amber-100 dark:ring-offset-amber-900/50 z-10 scale-105' : ''}
+                  ${isPreview && !block ? 'opacity-60 ring-1 ring-amber-400 dark:ring-amber-300' : ''}
+                  ${isExit && !block ? 'border-2 border-dashed border-amber-400 dark:border-amber-500 bg-transparent' : ''}
                 `}
-                style={{ width: cellSize, height: cellSize }}
+                style={{ width: cellSize, height: cellSize, ...blockGradientStyle }}
                 onClick={() => onClickCell?.(row, col)}
                 onMouseEnter={() => onHoverCell?.(row, col)}
                 onMouseLeave={() => onLeaveCell?.()}
@@ -158,7 +166,7 @@ export function Board({
                   </span>
                 )}
                 {isExit && !block && (
-                  <span className="text-zinc-400 dark:text-zinc-500 text-lg font-bold select-none pointer-events-none">
+                  <span className="text-amber-400 dark:text-amber-500 text-lg font-bold select-none pointer-events-none">
                     &rarr;
                   </span>
                 )}
@@ -176,10 +184,10 @@ export function Board({
       {/* Exit arrow outside the board */}
       {goalBlock && goalBlock.orientation === 'horizontal' && (
         <div
-          className="absolute flex items-center justify-center text-zinc-400 dark:text-zinc-500 font-bold text-xl animate-pulse"
+          className="absolute flex items-center justify-center text-amber-500 dark:text-amber-400 font-bold text-xl animate-bounce-arrow"
           style={{
             right: -(cellSize * 0.6),
-            top: goalBlock.row * cellSize + (cellSize / 2) - 12 + (goalBlock.row + 1) * 2,
+            top: goalBlock.row * cellSize + (cellSize / 2) - 12 + (goalBlock.row + 1) * 3,
             width: cellSize * 0.5,
             height: cellSize,
           }}

@@ -152,7 +152,7 @@ export function Board({
                   ${animated ? 'transition-all duration-300' : ''}
                   ${block ? 'cursor-pointer hover:brightness-110' : ''}
                   ${isHighlighted ? 'ring-2 ring-amber-400 ring-offset-1 ring-offset-amber-100 dark:ring-offset-amber-900/50 z-10 scale-105' : ''}
-                  ${isPreview && !block ? 'opacity-60 ring-1 ring-amber-400 dark:ring-amber-300' : ''}
+                  ${isPreview && !block ? 'opacity-60 ring-1 ring-amber-400 dark:ring-amber-300 animate-pulse' : ''}
                   ${isExit && !block ? 'border-2 border-dashed border-amber-400 dark:border-amber-500 bg-transparent' : ''}
                 `}
                 style={{ width: cellSize, height: cellSize, ...blockGradientStyle }}

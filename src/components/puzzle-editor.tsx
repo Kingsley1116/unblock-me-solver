@@ -20,12 +20,12 @@ interface ToolDef {
 }
 
 const tools: ToolDef[] = [
-  { tool: 'horizontal-2', label: '═2', icon: '═', title: 'Horizontal block, size 2' },
-  { tool: 'horizontal-3', label: '═3', icon: '═', title: 'Horizontal block, size 3' },
-  { tool: 'vertical-2', label: '║2', icon: '║', title: 'Vertical block, size 2' },
-  { tool: 'vertical-3', label: '║3', icon: '║', title: 'Vertical block, size 3' },
-  { tool: 'goal', label: '🎯', icon: '🎯', title: 'Set goal block' },
-  { tool: 'erase', label: '🗑', icon: '🗑', title: 'Erase block' },
+  { tool: 'horizontal-2', label: 'H2', icon: '→', title: 'Horizontal block, size 2' },
+  { tool: 'horizontal-3', label: 'H3', icon: '→', title: 'Horizontal block, size 3' },
+  { tool: 'vertical-2', label: 'V2', icon: '↓', title: 'Vertical block, size 2' },
+  { tool: 'vertical-3', label: 'V3', icon: '↓', title: 'Vertical block, size 3' },
+  { tool: 'goal', label: '', icon: '🚩', title: 'Set goal block' },
+  { tool: 'erase', label: '', icon: '🗑️', title: 'Erase block' },
 ];
 
 const BOARD_SIZE = 6;
@@ -146,31 +146,30 @@ export function PuzzleEditor({ blocks, onBlocksChange, cellSize = 64 }: PuzzleEd
   return (
     <div className="flex flex-col items-center gap-4">
       {/* Toolbar */}
-      <div className="inline-flex rounded-lg border border-zinc-300 dark:border-zinc-600 overflow-hidden shadow-sm">
-        {tools.map((t) => (
-          <button
-            key={t.tool}
-            title={t.title}
-            onClick={() => setSelectedTool(t.tool)}
-            className={`
-              px-3 py-2 text-sm font-medium transition-all border-r border-zinc-300 dark:border-zinc-600 last:border-r-0
-              ${
-                selectedTool === t.tool
-                  ? 'bg-blue-600 text-white ring-1 ring-blue-600 scale-105 z-10'
-                  : 'bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700'
-              }
-            `}
-          >
-            <span className="flex items-center gap-1">
-              <span className="text-base">{t.icon}</span>
-              {t.tool !== 'goal' && t.tool !== 'erase' && (
-                <span className="text-xs font-bold">
-                  {t.tool.includes('2') ? '2' : '3'}
-                </span>
-              )}
-            </span>
-          </button>
-        ))}
+      <div className="inline-flex items-center gap-1 rounded-xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-1 shadow-sm">
+        {tools.map((t) => {
+          const isActive = selectedTool === t.tool;
+          return (
+            <button
+              key={t.tool}
+              title={t.title}
+              onClick={() => setSelectedTool(t.tool)}
+              className={`
+                px-4 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 cursor-pointer
+                ${
+                  isActive
+                    ? 'bg-amber-500 text-white shadow-md scale-105 z-10'
+                    : 'text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-stone-800 dark:hover:text-stone-200'
+                }
+              `}
+            >
+              <span className="flex items-center gap-1.5">
+                <span className="text-base leading-none">{t.icon}</span>
+                {t.label && <span>{t.label}</span>}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Board with hover preview */}
@@ -185,27 +184,30 @@ export function PuzzleEditor({ blocks, onBlocksChange, cellSize = 64 }: PuzzleEd
         previewBlockId={previewCells ? blocks.length + 1 : undefined}
       />
 
-      {/* Block count + goal status */}
+      {/* Status bar: block count + goal indicator */}
       <div className="flex items-center gap-3 text-sm">
-        <span className="text-zinc-600 dark:text-zinc-400">
-          Blocks: <span className="font-semibold text-zinc-800 dark:text-zinc-200">{blocks.length}</span>
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 font-medium border border-stone-200 dark:border-stone-700">
+          <span className="text-base leading-none">🧱</span>
+          <span className="font-semibold">{blocks.length}</span>
+          <span className="text-stone-400 dark:text-stone-500 font-normal">block{blocks.length !== 1 ? 's' : ''}</span>
         </span>
-        <span className="text-zinc-400 dark:text-zinc-500">/</span>
-        <span className="flex items-center gap-1">
-          <span className="text-zinc-600 dark:text-zinc-400">Goal:</span>
-          {hasGoal ? (
-            <span className="text-green-600 dark:text-green-400 font-medium">&#10003;</span>
-          ) : (
-            <span className="text-amber-600 dark:text-amber-400 font-medium text-xs">
-              Set goal!
-            </span>
-          )}
-        </span>
+        {hasGoal ? (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full font-medium text-sm bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+            <span className="text-base leading-none">&#10003;</span>
+            <span>Goal set</span>
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full font-medium text-sm bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+            <span className="text-base leading-none">&#9888;</span>
+            <span>No goal</span>
+          </span>
+        )}
       </div>
 
-      {blocks.length > 0 && !hasGoal && (
-        <p className="text-xs text-amber-600 dark:text-amber-400">
-          Click a block with the &#127919; tool to set it as the goal, or add a new block.
+      {/* Empty state hint */}
+      {blocks.length === 0 && (
+        <p className="text-sm text-stone-400 dark:text-stone-500 text-center">
+          Select a tool and click the board to place blocks
         </p>
       )}
     </div>

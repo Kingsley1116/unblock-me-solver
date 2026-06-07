@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Block, Solution } from '@/lib/types';
 import { applyMove } from '@/lib/solver';
 import { getBlockName } from './color-utils';
@@ -45,7 +45,7 @@ export function SolutionPlayer({ solution, initialBlocks, onBlocksUpdate }: Solu
   const [speed, setSpeed] = useState<Speed>(1);
 
   // Precompute all intermediate states (derived data)
-  const states = useMemo(() => {
+  const states = (() => {
     if (!solution) return [] as Block[][];
     const result: Block[][] = [initialBlocks];
     let current = initialBlocks;
@@ -54,7 +54,7 @@ export function SolutionPlayer({ solution, initialBlocks, onBlocksUpdate }: Solu
       result.push(current);
     }
     return result;
-  }, [solution, initialBlocks]);
+  })();
 
   // Refs for stale-closure avoidance in interval / keyboard callbacks
   const statesRef = useRef<Block[][]>([]);
@@ -183,29 +183,26 @@ export function SolutionPlayer({ solution, initialBlocks, onBlocksUpdate }: Solu
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const goToStep = useCallback(
-    (targetIndex: number) => {
-      if (!solution) return;
-      const curStates = statesRef.current;
-      if (targetIndex < 0 || targetIndex > solution.moves.length) return;
+  const goToStep = (targetIndex: number) => {
+    if (!solution) return;
+    const curStates = statesRef.current;
+    if (targetIndex < 0 || targetIndex > solution.moves.length) return;
 
-      setStepIndex(targetIndex);
-      if (targetIndex > 0) {
-        const move = solution.moves[targetIndex - 1];
-        onBlocksUpdateRef.current(curStates[targetIndex], targetIndex, move.blockId);
-      } else {
-        onBlocksUpdateRef.current(initialBlocksRef.current, 0, -1);
-      }
-    },
-    [solution]
-  );
+    setStepIndex(targetIndex);
+    if (targetIndex > 0) {
+      const move = solution.moves[targetIndex - 1];
+      onBlocksUpdateRef.current(curStates[targetIndex], targetIndex, move.blockId);
+    } else {
+      onBlocksUpdateRef.current(initialBlocksRef.current, 0, -1);
+    }
+  };
 
-  const handleReset = useCallback(() => {
+  const handleReset = () => {
     goToStep(0);
     setIsPlaying(false);
-  }, [goToStep]);
+  };
 
-  const togglePlay = useCallback(() => {
+  const togglePlay = () => {
     if (!solution) return;
     if (stepIndex >= solution.moves.length) {
       goToStep(0);
@@ -213,7 +210,7 @@ export function SolutionPlayer({ solution, initialBlocks, onBlocksUpdate }: Solu
     } else {
       setIsPlaying((p) => !p);
     }
-  }, [stepIndex, solution, goToStep]);
+  };
 
   if (!solution) return null;
 
@@ -238,7 +235,7 @@ export function SolutionPlayer({ solution, initialBlocks, onBlocksUpdate }: Solu
     : null;
 
   // Generate confetti pieces deterministically from step count
-  const confettiPieces = useMemo(() => {
+  const confettiPieces = (() => {
     const pieces: { left: string; color: string; delay: string; animClass: string }[] = [];
     for (let i = 0; i < 30; i++) {
       const left = `${(i * 37 + 11) % 100}%`;
@@ -248,7 +245,7 @@ export function SolutionPlayer({ solution, initialBlocks, onBlocksUpdate }: Solu
       pieces.push({ left, color, delay, animClass });
     }
     return pieces;
-  }, []);
+  })();
 
   return (
     <div className="flex flex-col items-center gap-3 w-full max-w-md mx-auto animate-fade-in">

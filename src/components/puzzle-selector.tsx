@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import React, { useMemo } from 'react';
-import { Puzzle, Block } from '@/lib/types';
-import { presets } from '@/lib/presets';
-import { getBlockColor } from './color-utils';
+import React from "react";
+import { Puzzle, Block } from "@/lib/types";
+import { presets } from "@/lib/presets";
+import { getBlockColor } from "./color-utils";
 
 interface PuzzleSelectorProps {
   onSelectPuzzle: (puzzle: Puzzle, index: number) => void;
@@ -11,24 +11,27 @@ interface PuzzleSelectorProps {
   selectedIndex?: number;
 }
 
-const difficultyConfig: Record<string, { bg: string; text: string; border: string; label: string }> = {
+const difficultyConfig: Record<
+  string,
+  { bg: string; text: string; border: string; label: string }
+> = {
   easy: {
-    bg: 'bg-emerald-100 dark:bg-emerald-900/30',
-    text: 'text-emerald-700 dark:text-emerald-300',
-    border: 'border-emerald-200 dark:border-emerald-800/50',
-    label: 'Easy',
+    bg: "bg-emerald-100 dark:bg-emerald-900/30",
+    text: "text-emerald-700 dark:text-emerald-300",
+    border: "border-emerald-200 dark:border-emerald-800/50",
+    label: "Easy",
   },
   medium: {
-    bg: 'bg-amber-100 dark:bg-amber-900/30',
-    text: 'text-amber-700 dark:text-amber-300',
-    border: 'border-amber-200 dark:border-amber-800/50',
-    label: 'Medium',
+    bg: "bg-amber-100 dark:bg-amber-900/30",
+    text: "text-amber-700 dark:text-amber-300",
+    border: "border-amber-200 dark:border-amber-800/50",
+    label: "Medium",
   },
   hard: {
-    bg: 'bg-rose-100 dark:bg-rose-900/30',
-    text: 'text-rose-700 dark:text-rose-300',
-    border: 'border-rose-200 dark:border-rose-800/50',
-    label: 'Hard',
+    bg: "bg-rose-100 dark:bg-rose-900/30",
+    text: "text-rose-700 dark:text-rose-300",
+    border: "border-rose-200 dark:border-rose-800/50",
+    label: "Hard",
   },
 };
 
@@ -40,8 +43,8 @@ function buildBoardGrid(blocks: Block[]): number[][] {
   const grid: number[][] = Array.from({ length: 6 }, () => Array(6).fill(0));
   for (const block of blocks) {
     for (let i = 0; i < block.size; i++) {
-      const r = block.orientation === 'horizontal' ? block.row : block.row + i;
-      const c = block.orientation === 'horizontal' ? block.col + i : block.col;
+      const r = block.orientation === "horizontal" ? block.row : block.row + i;
+      const c = block.orientation === "horizontal" ? block.col + i : block.col;
       if (r >= 0 && r < 6 && c >= 0 && c < 6) {
         grid[r][c] = block.id;
       }
@@ -53,51 +56,55 @@ function buildBoardGrid(blocks: Block[]): number[][] {
 /** Map block ID to a Tailwind background color class for the thumbnail dot. */
 function getDotColor(blockId: number, blocks: Block[]): string {
   const block = blocks.find((b) => b.id === blockId);
-  if (!block) return 'bg-transparent';
+  if (!block) return "bg-transparent";
   const colorClass = getBlockColor(block.id, block.isGoal);
   // getBlockColor returns classes like 'bg-red-500' — extract the color name
   const match = colorClass.match(/^bg-(\S+)$/);
-  if (!match) return 'bg-stone-400';
-  const colorName = match[1].split('-')[0];
+  if (!match) return "bg-stone-400";
+  const colorName = match[1].split("-")[0];
   // Use a richer shade for thumbnails — 500 in light, 400 in dark
   return `bg-${colorName}-500 dark:bg-${colorName}-400`;
 }
 
 function MiniBoard({ puzzle }: { puzzle: Puzzle }) {
-  const grid = useMemo(() => buildBoardGrid(puzzle.blocks), [puzzle.blocks]);
-  const dotColors = useMemo(() => {
+  const grid = buildBoardGrid(puzzle.blocks);
+  const dotColors = (() => {
     const map = new Map<number, string>();
     for (const block of puzzle.blocks) {
       map.set(block.id, getDotColor(block.id, puzzle.blocks));
     }
-    map.set(0, 'bg-stone-200 dark:bg-stone-700');
+    map.set(0, "bg-stone-200 dark:bg-stone-700");
     return map;
-  }, [puzzle.blocks]);
+  })();
 
   return (
     <div
       className="grid shrink-0 rounded-md overflow-hidden"
       style={{
-        gridTemplateColumns: 'repeat(6, 8px)',
-        gridTemplateRows: 'repeat(6, 8px)',
-        gap: '2px',
-        width: '58px',
-        height: '58px',
+        gridTemplateColumns: "repeat(6, 8px)",
+        gridTemplateRows: "repeat(6, 8px)",
+        gap: "2px",
+        width: "58px",
+        height: "58px",
       }}
     >
       {grid.flat().map((cellId, i) => (
         <div
           key={i}
-          className={`rounded-[1.5px] ${dotColors.get(cellId) ?? 'bg-stone-200 dark:bg-stone-700'}`}
+          className={`rounded-[1.5px] ${dotColors.get(cellId) ?? "bg-stone-200 dark:bg-stone-700"}`}
         />
       ))}
     </div>
   );
 }
 
-export function PuzzleSelector({ onSelectPuzzle, onClear, selectedIndex }: PuzzleSelectorProps) {
+export function PuzzleSelector({
+  onSelectPuzzle,
+  onClear,
+  selectedIndex,
+}: PuzzleSelectorProps) {
   return (
-    <div className="flex flex-col items-center gap-4 w-full max-w-md">
+    <div className="flex flex-col items-center gap-4 w-full justify-center">
       <div className="flex gap-3 justify-center w-full flex-wrap">
         {presets.map((preset, index) => {
           const diff = difficultyConfig[preset.difficulty];
@@ -115,8 +122,8 @@ export function PuzzleSelector({ onSelectPuzzle, onClear, selectedIndex }: Puzzl
                 hover:-translate-y-1
                 ${
                   isSelected
-                    ? 'scale-[1.03] border-amber-500 dark:border-amber-400 ring-2 ring-amber-500/30 shadow-lg shadow-amber-500/10'
-                    : 'border-stone-200 dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-700 hover:shadow-lg hover:shadow-stone-200/50 dark:hover:shadow-stone-900/50'
+                    ? "scale-[1.03] border-amber-500 dark:border-amber-400 ring-2 ring-amber-500/30 shadow-lg shadow-amber-500/10"
+                    : "border-stone-200 dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-700 hover:shadow-lg hover:shadow-stone-200/50 dark:hover:shadow-stone-900/50"
                 }
               `}
             >

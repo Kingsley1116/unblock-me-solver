@@ -31,7 +31,7 @@
 
 ```bash
 # リポジトリをクローン
-git clone https://github.com/kingsley1116/unblock-me-solver.git
+git clone https://github.com/Kingsley1116/unblock-me-solver.git
 cd unblock-me-solver
 
 # 依存関係をインストール

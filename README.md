@@ -38,7 +38,7 @@ A Web-based sliding puzzle ([Rush Hour](<https://en.wikipedia.org/wiki/Rush_Hour
 
 ```bash
 # Clone the repository
-git clone https://github.com/kingsley1116/unblock-me-solver.git
+git clone https://github.com/Kingsley1116/unblock-me-solver.git
 cd unblock-me-solver
 
 # Install dependencies

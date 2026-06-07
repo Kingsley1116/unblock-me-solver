@@ -31,7 +31,7 @@
 
 ```bash
 # 複製專案
-git clone https://github.com/kingsley1116/unblock-me-solver.git
+git clone https://github.com/Kingsley1116/unblock-me-solver.git
 cd unblock-me-solver
 
 # 安裝依賴

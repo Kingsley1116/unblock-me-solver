@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Block, Move, Solution } from '@/lib/types';
+import { Block, Solution } from '@/lib/types';
 import { applyMove } from '@/lib/solver';
 import { getBlockName } from './color-utils';
 
@@ -27,28 +27,12 @@ const speedButtons: { label: string; speed: Speed }[] = [
   { label: '4x', speed: 4 },
 ];
 
-function describeMove(blocks: Block[], move: Move): string {
-  const block = blocks.find((b) => b.id === move.blockId);
-  if (!block) return 'Move block';
-  const name = getBlockName(block.id, block.isGoal);
-  const dirName =
-    move.direction === 'left'
-      ? 'left'
-      : move.direction === 'right'
-        ? 'right'
-        : move.direction === 'up'
-          ? 'up'
-          : 'down';
-  const stepText = move.steps === 1 ? '1 cell' : `${move.steps} cells`;
-  return `Move ${name} ${dirName} ${stepText}`;
-}
-
 export function SolutionPlayer({ solution, initialBlocks, onBlocksUpdate }: SolutionPlayerProps) {
   const [stepIndex, setStepIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState<Speed>(1);
 
-  // Precompute all intermediate states (derived data, no effects needed)
+  // Precompute all intermediate states (derived data)
   const states = useMemo(() => {
     if (!solution) return [] as Block[][];
     const result: Block[][] = [initialBlocks];
@@ -60,41 +44,45 @@ export function SolutionPlayer({ solution, initialBlocks, onBlocksUpdate }: Solu
     return result;
   }, [solution, initialBlocks]);
 
-  // Refs for values accessed in interval / event callbacks
-  const statesRef = useRef(states);
-  statesRef.current = states;
-  const initialBlocksRef = useRef(initialBlocks);
-  initialBlocksRef.current = initialBlocks;
+  // Refs for stale-closure avoidance in interval / keyboard callbacks
+  const statesRef = useRef<Block[][]>([]);
+  const initialBlocksRef = useRef<Block[]>(initialBlocks);
   const onBlocksUpdateRef = useRef(onBlocksUpdate);
-  onBlocksUpdateRef.current = onBlocksUpdate;
-  const solutionRef = useRef(solution);
-  const isPlayingRef = useRef(isPlaying);
-  isPlayingRef.current = isPlaying;
+  const solutionRef = useRef<Solution | null>(null);
+  const isPlayingRef = useRef(false);
 
-  // Reset internal state and notify parent when solution changes.
-  // The setState calls here are responding to a prop change (solution / initialBlocks),
-  // which is the intended use case for resetting local state.
+  // Sync refs (must be in an effect per React Compiler rules)
   useEffect(() => {
-    const solutionChanged = solution !== solutionRef.current;
-    const blocksChanged = initialBlocks !== initialBlocksRef.current;
-    solutionRef.current = solution;
+    statesRef.current = states;
     initialBlocksRef.current = initialBlocks;
+    onBlocksUpdateRef.current = onBlocksUpdate;
+    solutionRef.current = solution;
+    isPlayingRef.current = isPlaying;
+  });
 
-    if (solutionChanged || blocksChanged) {
-      if (solution) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setStepIndex(0);
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setIsPlaying(false);
-        onBlocksUpdateRef.current(initialBlocks, 0, -1);
-      }
+  // Detect solution / initialBlocks change and reset internal state
+  const prevSolutionRef = useRef<Solution | null>(null);
+  const prevInitialBlocksRef = useRef<Block[]>(initialBlocks);
+
+  useEffect(() => {
+    const solutionChanged = solution !== prevSolutionRef.current;
+    const blocksChanged = initialBlocks !== prevInitialBlocksRef.current;
+    prevSolutionRef.current = solution;
+    prevInitialBlocksRef.current = initialBlocks;
+
+    if ((solutionChanged || blocksChanged) && solution) {
+      // Resetting internal state in response to prop change.
+      setStepIndex(0);
+      setIsPlaying(false);
+      onBlocksUpdate(initialBlocks, 0, -1);
     }
-  }, [solution, initialBlocks]);
+  }, [solution, initialBlocks, onBlocksUpdate]);
 
   // Auto-play with interval
   useEffect(() => {
     if (!isPlaying) return;
     if (!solution || solution.moves.length === 0) {
+      // Edge case: solution cleared while playing. Must sync isPlaying state.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsPlaying(false);
       return;
@@ -104,7 +92,6 @@ export function SolutionPlayer({ solution, initialBlocks, onBlocksUpdate }: Solu
       setStepIndex((prev) => {
         const next = prev + 1;
         if (next > solution.moves.length) {
-          // End of playback — stop playing
           setIsPlaying(false);
           return prev;
         }
@@ -120,7 +107,7 @@ export function SolutionPlayer({ solution, initialBlocks, onBlocksUpdate }: Solu
     return () => clearInterval(interval);
   }, [isPlaying, speed, solution]);
 
-  // Keyboard shortcuts
+  // Keyboard shortcuts (stable effect — reads values from refs)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (
@@ -131,18 +118,18 @@ export function SolutionPlayer({ solution, initialBlocks, onBlocksUpdate }: Solu
         return;
       }
 
-      const currentSolution = solutionRef.current;
-      const currentStates = statesRef.current;
+      const curSolution = solutionRef.current;
+      const curStates = statesRef.current;
 
       switch (e.key) {
         case 'ArrowLeft':
           e.preventDefault();
           setStepIndex((prev) => {
             const next = Math.max(0, prev - 1);
-            if (next > 0 && currentSolution) {
-              const move = currentSolution.moves[next - 1];
-              if (move && currentStates[next]) {
-                onBlocksUpdateRef.current(currentStates[next], next, move.blockId);
+            if (next > 0 && curSolution) {
+              const move = curSolution.moves[next - 1];
+              if (move && curStates[next]) {
+                onBlocksUpdateRef.current(curStates[next], next, move.blockId);
               }
             } else {
               onBlocksUpdateRef.current(initialBlocksRef.current, 0, -1);
@@ -153,12 +140,12 @@ export function SolutionPlayer({ solution, initialBlocks, onBlocksUpdate }: Solu
         case 'ArrowRight':
           e.preventDefault();
           setStepIndex((prev) => {
-            if (!currentSolution) return prev;
-            const next = Math.min(currentSolution.moves.length, prev + 1);
+            if (!curSolution) return prev;
+            const next = Math.min(curSolution.moves.length, prev + 1);
             if (next > 0) {
-              const move = currentSolution.moves[next - 1];
-              if (move && currentStates[next]) {
-                onBlocksUpdateRef.current(currentStates[next], next, move.blockId);
+              const move = curSolution.moves[next - 1];
+              if (move && curStates[next]) {
+                onBlocksUpdateRef.current(curStates[next], next, move.blockId);
               }
             }
             return next;
@@ -166,9 +153,9 @@ export function SolutionPlayer({ solution, initialBlocks, onBlocksUpdate }: Solu
           break;
         case ' ':
           e.preventDefault();
-          if (!currentSolution) return;
+          if (!curSolution) return;
           setStepIndex((prev) => {
-            if (prev >= currentSolution.moves.length) {
+            if (prev >= curSolution.moves.length) {
               onBlocksUpdateRef.current(initialBlocksRef.current, 0, -1);
               setIsPlaying(true);
               return 0;
@@ -182,18 +169,18 @@ export function SolutionPlayer({ solution, initialBlocks, onBlocksUpdate }: Solu
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []); // stable — uses refs for current values
+  }, []);
 
   const goToStep = useCallback(
     (targetIndex: number) => {
       if (!solution) return;
-      const currentStates = statesRef.current;
+      const curStates = statesRef.current;
       if (targetIndex < 0 || targetIndex > solution.moves.length) return;
 
       setStepIndex(targetIndex);
       if (targetIndex > 0) {
         const move = solution.moves[targetIndex - 1];
-        onBlocksUpdateRef.current(currentStates[targetIndex], targetIndex, move.blockId);
+        onBlocksUpdateRef.current(curStates[targetIndex], targetIndex, move.blockId);
       } else {
         onBlocksUpdateRef.current(initialBlocksRef.current, 0, -1);
       }
@@ -224,12 +211,20 @@ export function SolutionPlayer({ solution, initialBlocks, onBlocksUpdate }: Solu
     ? solution.moves[stepIndex - 1]
     : null;
 
-  // Move description computed from precomputed states (not refs)
+  // Compute move description from precomputed states (not from refs)
   const moveDescription = currentMove
-    ? describeMove(
-        stepIndex > 1 ? states[stepIndex - 1] : initialBlocks,
-        currentMove
-      )
+    ? (() => {
+        const prevBlocks = stepIndex > 1 ? states[stepIndex - 1] : initialBlocks;
+        const block = prevBlocks.find((b) => b.id === currentMove.blockId);
+        if (!block) return 'Move block';
+        const name = getBlockName(block.id, block.isGoal);
+        const dirMap: Record<string, string> = {
+          left: 'left', right: 'right', up: 'up', down: 'down',
+        };
+        const dirName = dirMap[currentMove.direction];
+        const stepText = currentMove.steps === 1 ? '1 cell' : `${currentMove.steps} cells`;
+        return `Move ${name} ${dirName} ${stepText}`;
+      })()
     : null;
 
   return (

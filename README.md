@@ -1,36 +1,108 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Unblock Me Solver —— Sliding Puzzle Solver
 
-## Getting Started
+<p align="center">
+  <a href="./README.zh-Hans.md">简体中文</a> •
+  <a href="./README.zh-Hant.md">繁體中文</a> •
+  <a href="./README.zh-yue.md">粵語</a> •
+  <a href="./README.ja.md">日本語</a>
+</p>
 
-First, run the development server:
+A Web-based sliding puzzle ([Rush Hour](<https://en.wikipedia.org/wiki/Rush_Hour_(puzzle)>)) optimal solver that utilizes the Breadth-First Search (BFS) algorithm to calculate the optimal solution with the minimum number of moves.
+
+## Features
+
+- **Optimal Solver**: Utilizes the Breadth-First Search (BFS) algorithm, guaranteeing to find the optimal solution with the fewest moves.
+- **Built-in Preset Puzzles**: Provides pre-configured levels across three difficulty settings—Beginner, Intermediate, and Advanced—allowing quick experience without manual setup.
+- **Custom Puzzle Editor**: Supports free placement of horizontal and vertical blocks (size 2 or 3) and marking the target block (red) to design your own custom levels.
+- **Animated Solution Player**: Visualizes the solving process step-by-step, supporting play/pause, speed adjustment (0.5x to 4x), and keyboard shortcuts (`←` `→` for step-by-step movement, `Space` for play/pause). The progress bar displays the current step and annotates the block number, direction, and distance for each move.
+- **Completion Effects**: Displays a colorful confetti animation to celebrate when a puzzle is successfully solved.
+- **Dark Mode**: Automatically adapts to system settings via `prefers-color-scheme`, supporting both light and dark themes.
+- **Responsive Design**: Optimized for both desktop and mobile devices, providing an excellent experience across various screen sizes.
+
+## Tech Stack
+
+| Technology                                   | Version | Purpose               |
+| -------------------------------------------- | ------- | --------------------- |
+| [Next.js](https://nextjs.org)                | 16.2.7  | Application Framework |
+| [React](https://react.dev)                   | 19.2.4  | UI Framework          |
+| [Tailwind CSS](https://tailwindcss.com)      | 4       | Styling & Design      |
+| [TypeScript](https://www.typescriptlang.org) | 5       | Type Safety           |
+
+## Quick Start
+
+### Prerequisites
+
+- Node.js 18 or higher
+
+### Installation & Execution
 
 ```bash
+# Clone the repository
+git clone https://github.com/kingsley1116/unblock-me-solver.git
+cd unblock-me-solver
+
+# Install dependencies
+npm install
+
+# Start the development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open your browser and navigate to [http://localhost:3000](https://www.google.com/search?q=http://localhost:3000) to use the application.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Build for Production
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm start
 
-## Learn More
+```
 
-To learn more about Next.js, take a look at the following resources:
+## How It Works
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Breadth-First Search (BFS)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+The solver uses the Breadth-First Search (BFS) algorithm. Starting from the initial board configuration, it explores all possible moves level by level, ensuring that the first solution found is the one with the minimum number of moves.
 
-## Deploy on Vercel
+#### Core Process
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. **State Encoding**: Encodes the positions of all blocks on the board into a unique string (formatted like `1:2,1|2:0,0|...`), which serves as the state hash.
+2. **Visited Set**: Uses a `Set<string>` to keep track of already visited states, avoiding redundant searches of the same board configuration and preventing infinite loops.
+3. **Move Generation**: For each board state, it iterates through all blocks, checks their allowed moving directions and distances, and generates all valid moves.
+4. **Breadth-First Traversal**: Uses a queue to perform the BFS. The first time the target state is reached (where the right edge of the red block reaches the 6th column), it is confirmed as the optimal solution.
+5. **Path Reconstruction**: Backtracks from the target state to the initial state using a parent map to reconstruct the complete sequence of moves.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+#### Board Rules
+
+- Board size: 6 × 6 grid.
+- Block types: Horizontal (size 2 or 3) and vertical (size 2 or 3).
+- Target block: A red horizontal block that must exit from the right side of the board (victory is achieved when the right edge of the block reaches the 6th column).
+- Blocks can only slide along their own orientation; they cannot rotate or cross over other blocks.
+
+## Project Structure
+
+```
+src/
+├── app/
+│   ├── globals.css          # Global styles (Tailwind + custom animations)
+│   ├── layout.tsx           # Root layout
+│   └── page.tsx             # Main page entry point
+├── components/
+│   ├── board.tsx            # Board rendering component
+│   ├── color-utils.ts       # Block color utility functions
+│   ├── puzzle-editor.tsx    # Custom puzzle editor
+│   ├── puzzle-selector.tsx  # Preset puzzle selector
+│   ├── solution-player.tsx  # Solution animation player
+│   ├── solver-test.tsx      # Solver testing component
+│   └── unblock-me-app.tsx   # Main application component
+└── lib/
+    ├── presets.ts           # Preset puzzle data
+    ├── solver.ts            # BFS solver core logic
+    └── types.ts             # TypeScript type definitions
+
+```
+
+## License
+
+MIT.

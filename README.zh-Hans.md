@@ -1,31 +1,37 @@
-# Unblock Me Solver — 滑块拼图求解器
+# Unblock Me Solver —— 滑块拼图求解器
 
-一个基于 Web 的 [Unblock Me](https://en.wikipedia.org/wiki/Rush_Hour_%28puzzle%29)（华容道/滑块拼图）最优解求解器，使用广度优先搜索（BFS）算法计算最短步数解，并在浏览器中以动画形式播放完整求解过程。
+一个基于 Web 的滑块拼图（[塞车时间](<https://zh.wikipedia.org/zh-cn/%E5%A1%9E%E8%BB%8A%E6%99%82%E9%96%93_(%E9%81%8A%E6%88%B2)>)）最佳解求解器，使用广度优先搜索（BFS）算法计算最少移动步数的最优解法。
 
 ## 功能特性
 
-- **最优解求解器**：基于 BFS 算法，结合状态哈希与已访问集合进行去重，保证找到步数最短的解法
-- **内置预设关卡**：提供初级、中级、高级三个难度等级的预设拼图，开箱即用
-- **自定义关卡编辑器**：支持在 6x6 棋盘上自由放置水平（大小 2-3）和垂直（大小 2-3）滑块，自主设计拼图
-- **解法动画播放器**：将求解结果以动画形式逐步展示，支持播放/暂停、0.5x 至 4x 倍速调节，并提供键盘快捷键操作
-- **完成特效**：目标滑块成功移出棋盘后触发彩屑庆祝效果
-- **暗色模式**：通过 `prefers-color-scheme` 媒体查询自动适配系统主题
-- **响应式设计**：适配桌面端与移动端不同屏幕尺寸
+- **最佳解求解器**：使用广度优先搜索（BFS）算法，保证找出最少移动步数的最优解
+- **内置预设谜题**：提供初级（Beginner）、中级（Intermediate）、进阶（Advanced）三种难度的预设关卡，无需手动设定即可快速体验
+- **自定义拼图编辑器**：支持自由放置水平方块与垂直方块（大小 2 或 3），可标记目标方块（红色），打造专属关卡
+- **动画解法播放器**：逐步可视化展示求解过程，支持播放／暂停、速度调整（0.5x ～ 4x）、键盘快捷键（`←` `→` 逐步移动、`Space` 播放／暂停）；进度条显示当前步骤，并标注每一步移动的方块编号、方向与距离
+- **完成特效**：成功求解时显示缤纷彩带（confetti）动画庆祝效果
+- **深色模式**：自动跟随系统 `prefers-color-scheme` 设定，支持浅色与深色主题
+- **响应式设计**：适配桌面与移动端设备，在不同屏幕尺寸下均有良好体验
 
 ## 技术栈
 
-| 技术 | 用途 |
-|------|------|
-| [Next.js](https://nextjs.org) 16.2.7 | 应用框架 |
-| [React](https://react.dev) 19.2.4 | 用户界面 |
-| [Tailwind CSS](https://tailwindcss.com) 4 | 样式方案 |
-| [TypeScript](https://www.typescriptlang.org) 5 | 类型安全 |
+| 技术                                         | 版本   | 用途     |
+| -------------------------------------------- | ------ | -------- |
+| [Next.js](https://nextjs.org)                | 16.2.7 | 应用框架 |
+| [React](https://react.dev)                   | 19.2.4 | UI 框架  |
+| [Tailwind CSS](https://tailwindcss.com)      | 4      | 样式设计 |
+| [TypeScript](https://www.typescriptlang.org) | 5      | 类型安全 |
 
 ## 快速开始
 
+### 环境需求
+
+- Node.js 18 或以上版本
+
+### 安装与运行
+
 ```bash
-# 克隆仓库
-git clone <repository-url>
+# 克隆项目
+git clone https://github.com/kingsley1116/unblock-me-solver.git
 cd unblock-me-solver
 
 # 安装依赖
@@ -33,64 +39,63 @@ npm install
 
 # 启动开发服务器
 npm run dev
+
 ```
 
-在浏览器中打开 [http://localhost:3000](http://localhost:3000) 即可使用。
+打开浏览器并访问 [http://localhost:3000](https://www.google.com/search?q=http://localhost:3000) 即可使用。
+
+### 构建生产版本
 
 ```bash
-# 生产构建
 npm run build
-
-# 启动生产服务器
 npm start
+
 ```
 
 ## 工作原理
 
-本项目的求解器采用**广度优先搜索（BFS）**算法。由于 BFS 按层遍历状态空间，首次到达目标状态时找到的路径即为最短路径（最少移动步数）。
+### 广度优先搜索（BFS）
 
-### 核心流程
+求解器使用广度优先搜索（Breadth-First Search）算法，从初始盘面状态出发，逐层探索所有可能的移动，保证找到的解法为最少移动步数。
 
-1. **状态编码**：将棋盘上每个滑块的位置 `(row, col)` 按滑块 ID 排序后拼接为字符串，作为状态的唯一哈希值
-2. **移动生成**：遍历每个滑块，在其移动方向上检测连续的空位，为每个可能的步数生成一个合法移动
-3. **去重**：使用 `Set<string>` 记录已访问的状态哈希，避免重复搜索
-4. **路径回溯**：BFS 过程中维护 `parentMap`，记录每个状态的前驱状态及移动操作；找到目标状态后，从目标状态逆向回溯至初始状态，得出完整解法序列
+#### 核心流程
 
-### 数据结构
+1. **状态编码**：将棋盘上所有方块的位置编码为唯一字符串（格式如 `1:2,1|2:0,0|...`），用作状态哈希值（state hash）
+2. **已访问集合**：使用 `Set<string>` 记录已访问的状态，避免重复搜索同一盘面，防止死循环
+3. **移动生成**：对于每个棋盘状态，遍历所有方块，检查其可移动的方向与距离，生成所有合法移动
+4. **广度优先遍历**：使用队列（queue）进行 BFS，首次到达目标状态（红色方块右侧边缘位于第 6 列）即为最优解
+5. **路径重建**：通过父状态对照表（parent map）反向追踪，从目标状态回溯至初始状态，重建完整的移动序列
 
-- **棋盘**：6x6 二维数组 `number[][]`，每个单元格存储滑块 ID（0 表示空格）
-- **滑块（Block）**：具有 `orientation`（`horizontal` / `vertical`）、`size`（2 或 3）、位置 `(row, col)` 以及 `isGoal` 标记
-- **目标判定**：红色目标滑块为水平方向，其右边缘到达棋盘最右端（列索引为 `GRID_SIZE - 1`，即 5）时即为通关
+#### 棋盘规则
+
+- 棋盘大小：6 × 6 网格
+- 方块类型：水平（horizontal，大小 2 或 3）和垂直（vertical，大小 2 或 3）
+- 目标方块：一个红色水平方块，必须从棋盘右侧出口移出（方块的右侧边缘到达第 6 列即为胜利）
+- 方块只能沿其自身方向滑动，不能旋转或跨越其他方块
 
 ## 项目结构
 
 ```
-.
-├── src/
-│   ├── app/                      # Next.js App Router 页面
-│   │   ├── layout.tsx            # 根布局
-│   │   ├── page.tsx              # 首页
-│   │   └── globals.css           # 全局样式（含 Tailwind 指令）
-│   ├── components/               # React 组件
-│   │   ├── unblock-me-app.tsx    # 主应用入口组件
-│   │   ├── board.tsx             # 6x6 棋盘渲染
-│   │   ├── puzzle-editor.tsx     # 自定义关卡编辑器
-│   │   ├── puzzle-selector.tsx   # 预设关卡选择器
-│   │   ├── solution-player.tsx   # 解法动画播放器
-│   │   ├── solver-test.tsx       # 求解器测试面板
-│   │   └── color-utils.ts        # 颜色工具函数
-│   └── lib/                      # 核心逻辑库
-│       ├── solver.ts             # BFS 求解器
-│       ├── presets.ts            # 预设关卡数据
-│       └── types.ts              # TypeScript 类型定义
-├── public/                       # 静态资源
-├── package.json                  # 项目配置与依赖
-├── tsconfig.json                 # TypeScript 配置
-├── next.config.ts                # Next.js 配置
-├── postcss.config.mjs            # PostCSS 配置
-└── eslint.config.mjs             # ESLint 配置
+src/
+├── app/
+│   ├── globals.css          # 全局样式（Tailwind + 自定义动画）
+│   ├── layout.tsx           # 根布局
+│   └── page.tsx             # 主页面入口
+├── components/
+│   ├── board.tsx            # 棋盘渲染组件
+│   ├── color-utils.ts       # 方块颜色工具
+│   ├── puzzle-editor.tsx    # 自定义拼图编辑器
+│   ├── puzzle-selector.tsx  # 预设拼图选择器
+│   ├── solution-player.tsx  # 解法动画播放器
+│   ├── solver-test.tsx      # 求解器测试组件
+│   └── unblock-me-app.tsx   # 主应用组件
+└── lib/
+    ├── presets.ts           # 预设拼图数据
+    ├── solver.ts            # BFS 求解器核心逻辑
+    └── types.ts             # TypeScript 类型定义
+
 ```
 
-## 许可证
+## 授权
 
-暂无。
+MIT.

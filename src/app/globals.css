@@ -272,6 +272,10 @@ body::before {
   animation: auto-pulse 1.2s ease-in-out infinite;
 }
 
+.animate-block-slide {
+  transition: transform 0.3s ease-out;
+}
+
 .confetti-piece {
   position: absolute;
   width: 6px;

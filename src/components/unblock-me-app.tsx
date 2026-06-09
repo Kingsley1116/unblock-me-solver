@@ -302,10 +302,18 @@ export function UnblockMeApp() {
 
       {/* Footer — last stagger element */}
       <footer
-        className="mt-auto w-screen -mx-4 sm:-mx-6 px-4 sm:px-6 py-6 text-center text-xs text-stone-400 dark:text-stone-500 border-t border-stone-200 dark:border-stone-800 animate-fade-in"
+        className="mt-auto w-screen -mx-4 sm:-mx-6 px-4 sm:px-6 py-6 text-center text-md text-stone-400 dark:text-stone-500 border-t border-stone-200 dark:border-stone-800 animate-fade-in"
         style={{ animationDelay: "300ms" }}
       >
-        Built with Next.js &mdash; Unblock Me (Rush Hour) puzzle solver
+        Built with Next.js &mdash; Unblock Me (Rush Hour) puzzle solver{" "}
+        <a
+          href="https://github.com/Kingsley1116/unblock-me-solver"
+          className="underline hover:text-stone-600 dark:hover:text-stone-300"
+          target="_blank"
+          rel="noreferrer"
+        >
+          GitHub
+        </a>
       </footer>
     </div>
   );

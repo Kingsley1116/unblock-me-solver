@@ -244,8 +244,16 @@ export function SolverTest() {
       )}
 
       {/* Footer */}
-      <footer className="mt-auto py-6 text-center text-xs text-stone-400 dark:text-stone-600">
-        Built with Next.js &mdash; Unblock Me (Rush Hour) puzzle solver
+      <footer className="mt-auto py-6 text-center text-lg text-stone-400 dark:text-stone-600">
+        Built with Next.js &mdash; Unblock Me (Rush Hour) puzzle solver{" "}
+        <a
+          href="https://github.com/Kingsley1116/unblock-me-solver"
+          className="underline hover:text-stone-600 dark:hover:text-stone-300"
+          target="_blank"
+          rel="noreferrer"
+        >
+          GitHub
+        </a>
       </footer>
     </div>
   );

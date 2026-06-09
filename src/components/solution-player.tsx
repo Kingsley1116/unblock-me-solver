@@ -1,45 +1,63 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Block, Solution } from '@/lib/types';
-import { applyMove } from '@/lib/solver';
-import { getBlockName } from './color-utils';
+import React, { useState, useEffect, useRef } from "react";
+import { Block, Solution } from "@/lib/types";
+import { applyMove } from "@/lib/solver";
+import { getBlockName } from "./color-utils";
 
 interface SolutionPlayerProps {
   solution: Solution | null;
   initialBlocks: Block[];
-  onBlocksUpdate: (blocks: Block[], stepIndex: number, movedBlockId: number) => void;
+  onBlocksUpdate: (
+    blocks: Block[],
+    stepIndex: number,
+    movedBlockId: number,
+  ) => void;
 }
 
-type Speed = 0.5 | 1 | 2 | 4;
+type Speed = 0.25 | 0.5 | 1 | 2 | 4;
 
 const SPEED_MS: Record<Speed, number> = {
-  0.5: 1000,
-  1: 500,
-  2: 250,
-  4: 125,
+  0.25: 3200,
+  0.5: 1600,
+  1: 800,
+  2: 400,
+  4: 200,
 };
 
 const speedOptions: { label: string; speed: Speed }[] = [
-  { label: '0.5x', speed: 0.5 },
-  { label: '1x', speed: 1 },
-  { label: '2x', speed: 2 },
-  { label: '4x', speed: 4 },
+  { label: "0.25x", speed: 0.25 },
+  { label: "0.5x", speed: 0.5 },
+  { label: "1x", speed: 1 },
+  { label: "2x", speed: 2 },
+  { label: "4x", speed: 4 },
 ];
 
 const DIRECTION_ARROW: Record<string, string> = {
-  left: '←',
-  right: '→',
-  up: '↑',
-  down: '↓',
+  left: "←",
+  right: "→",
+  up: "↑",
+  down: "↓",
 };
 
 const CONFETTI_COLORS = [
-  '#f59e0b', '#10b981', '#3b82f6', '#ef4444', '#8b5cf6',
-  '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16',
+  "#f59e0b",
+  "#10b981",
+  "#3b82f6",
+  "#ef4444",
+  "#8b5cf6",
+  "#ec4899",
+  "#14b8a6",
+  "#f97316",
+  "#6366f1",
+  "#84cc16",
 ];
 
-export function SolutionPlayer({ solution, initialBlocks, onBlocksUpdate }: SolutionPlayerProps) {
+export function SolutionPlayer({
+  solution,
+  initialBlocks,
+  onBlocksUpdate,
+}: SolutionPlayerProps) {
   const [stepIndex, setStepIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState<Speed>(1);
@@ -134,7 +152,7 @@ export function SolutionPlayer({ solution, initialBlocks, onBlocksUpdate }: Solu
       const curStates = statesRef.current;
 
       switch (e.key) {
-        case 'ArrowLeft':
+        case "ArrowLeft":
           e.preventDefault();
           setStepIndex((prev) => {
             const next = Math.max(0, prev - 1);
@@ -149,7 +167,7 @@ export function SolutionPlayer({ solution, initialBlocks, onBlocksUpdate }: Solu
             return next;
           });
           break;
-        case 'ArrowRight':
+        case "ArrowRight":
           e.preventDefault();
           setStepIndex((prev) => {
             if (!curSolution) return prev;
@@ -163,7 +181,7 @@ export function SolutionPlayer({ solution, initialBlocks, onBlocksUpdate }: Solu
             return next;
           });
           break;
-        case ' ':
+        case " ":
           e.preventDefault();
           if (!curSolution) return;
           setStepIndex((prev) => {
@@ -179,8 +197,8 @@ export function SolutionPlayer({ solution, initialBlocks, onBlocksUpdate }: Solu
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   const goToStep = (targetIndex: number) => {
@@ -191,7 +209,11 @@ export function SolutionPlayer({ solution, initialBlocks, onBlocksUpdate }: Solu
     setStepIndex(targetIndex);
     if (targetIndex > 0) {
       const move = solution.moves[targetIndex - 1];
-      onBlocksUpdateRef.current(curStates[targetIndex], targetIndex, move.blockId);
+      onBlocksUpdateRef.current(
+        curStates[targetIndex],
+        targetIndex,
+        move.blockId,
+      );
     } else {
       onBlocksUpdateRef.current(initialBlocksRef.current, 0, -1);
     }
@@ -217,26 +239,41 @@ export function SolutionPlayer({ solution, initialBlocks, onBlocksUpdate }: Solu
   const totalSteps = solution.moves.length;
   const progress = totalSteps > 0 ? (stepIndex / totalSteps) * 100 : 100;
   const isComplete = stepIndex === totalSteps && totalSteps > 0;
-  const currentMove = stepIndex > 0 && stepIndex <= totalSteps
-    ? solution.moves[stepIndex - 1]
-    : null;
+  const currentMove =
+    stepIndex > 0 && stepIndex <= totalSteps
+      ? solution.moves[stepIndex - 1]
+      : null;
 
   // Compute move description from precomputed states (not from refs)
   const moveDescription = currentMove
     ? (() => {
-        const prevBlocks = stepIndex > 1 ? states[stepIndex - 1] : initialBlocks;
+        const prevBlocks =
+          stepIndex > 1 ? states[stepIndex - 1] : initialBlocks;
         const block = prevBlocks.find((b) => b.id === currentMove.blockId);
         if (!block) return null;
         const name = getBlockName(block.id, block.isGoal);
-        const arrow = DIRECTION_ARROW[currentMove.direction] ?? currentMove.direction;
-        const stepText = currentMove.steps === 1 ? '1 cell' : `${currentMove.steps} cells`;
-        return { name, arrow, stepText, blockId: currentMove.blockId, isGoal: block.isGoal };
+        const arrow =
+          DIRECTION_ARROW[currentMove.direction] ?? currentMove.direction;
+        const stepText =
+          currentMove.steps === 1 ? "1 cell" : `${currentMove.steps} cells`;
+        return {
+          name,
+          arrow,
+          stepText,
+          blockId: currentMove.blockId,
+          isGoal: block.isGoal,
+        };
       })()
     : null;
 
   // Generate confetti pieces deterministically from step count
   const confettiPieces = (() => {
-    const pieces: { left: string; color: string; delay: string; animClass: string }[] = [];
+    const pieces: {
+      left: string;
+      color: string;
+      delay: string;
+      animClass: string;
+    }[] = [];
     for (let i = 0; i < 30; i++) {
       const left = `${(i * 37 + 11) % 100}%`;
       const color = CONFETTI_COLORS[i % CONFETTI_COLORS.length];
@@ -264,18 +301,18 @@ export function SolutionPlayer({ solution, initialBlocks, onBlocksUpdate }: Solu
             )}
           </div>
           <span className="text-xs text-stone-400 dark:text-stone-500 tabular-nums">
-            {totalSteps > 0 ? `${Math.round(progress)}%` : 'Done'}
+            {totalSteps > 0 ? `${Math.round(progress)}%` : "Done"}
           </span>
         </div>
         <div className="relative w-full h-2.5 bg-stone-200 dark:bg-stone-700 rounded-full overflow-hidden">
           <div
             className={`h-full rounded-full transition-all duration-300 ease-out bg-gradient-to-r from-amber-400 to-amber-600 ${
-              isPlaying ? 'animate-shimmer' : ''
+              isPlaying ? "animate-shimmer" : ""
             }`}
             style={{
               width: `${progress}%`,
               backgroundImage: isPlaying
-                ? 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.35) 50%, transparent 100%), linear-gradient(to right, #f59e0b, #d97706)'
+                ? "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.35) 50%, transparent 100%), linear-gradient(to right, #f59e0b, #d97706)"
                 : undefined,
             }}
           />
@@ -308,16 +345,20 @@ export function SolutionPlayer({ solution, initialBlocks, onBlocksUpdate }: Solu
         >
           <span
             className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-white text-xs font-bold ${
-              moveDescription.isGoal ? 'bg-red-500' : 'bg-amber-500'
+              moveDescription.isGoal ? "bg-red-500" : "bg-amber-500"
             }`}
           >
             {moveDescription.blockId}
           </span>
-          <span className="text-stone-500 dark:text-stone-400">{moveDescription.name}</span>
+          <span className="text-stone-500 dark:text-stone-400">
+            {moveDescription.name}
+          </span>
           <span className="text-amber-600 dark:text-amber-400 text-base leading-none">
             {moveDescription.arrow}
           </span>
-          <span className="text-stone-500 dark:text-stone-400">{moveDescription.stepText}</span>
+          <span className="text-stone-500 dark:text-stone-400">
+            {moveDescription.stepText}
+          </span>
         </div>
       )}
       {stepIndex === 0 && totalSteps > 0 && (
@@ -330,7 +371,10 @@ export function SolutionPlayer({ solution, initialBlocks, onBlocksUpdate }: Solu
       {isComplete && (
         <div className="relative w-full">
           {/* Confetti */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ height: '120px', top: '-10px' }}>
+          <div
+            className="absolute inset-0 overflow-hidden pointer-events-none"
+            style={{ height: "120px", top: "-10px" }}
+          >
             {confettiPieces.map((piece, i) => (
               <div
                 key={i}
@@ -350,7 +394,7 @@ export function SolutionPlayer({ solution, initialBlocks, onBlocksUpdate }: Solu
               Puzzle Solved!
             </span>
             <span className="text-xs text-emerald-600 dark:text-emerald-400">
-              Completed in {totalSteps} {totalSteps === 1 ? 'move' : 'moves'}
+              Completed in {totalSteps} {totalSteps === 1 ? "move" : "moves"}
             </span>
           </div>
         </div>
@@ -382,22 +426,33 @@ export function SolutionPlayer({ solution, initialBlocks, onBlocksUpdate }: Solu
               aria-label="Previous step"
             >
               <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
-                <path fillRule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z" />
+                <path
+                  fillRule="evenodd"
+                  d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"
+                />
               </svg>
             </button>
 
             <button
               onClick={togglePlay}
               className="p-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white shadow-sm transition-all min-w-[36px] flex items-center justify-center"
-              title={isPlaying ? 'Pause (space)' : 'Play (space)'}
-              aria-label={isPlaying ? 'Pause' : 'Play'}
+              title={isPlaying ? "Pause (space)" : "Play (space)"}
+              aria-label={isPlaying ? "Pause" : "Play"}
             >
               {isPlaying ? (
-                <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
+                <svg
+                  className="w-4 h-4"
+                  viewBox="0 0 16 16"
+                  fill="currentColor"
+                >
                   <path d="M5 3.5h2v9H5v-9zm4 0h2v9H9v-9z" />
                 </svg>
               ) : (
-                <svg className="w-4 h-4 ml-0.5" viewBox="0 0 16 16" fill="currentColor">
+                <svg
+                  className="w-4 h-4 ml-0.5"
+                  viewBox="0 0 16 16"
+                  fill="currentColor"
+                >
                   <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z" />
                 </svg>
               )}
@@ -411,7 +466,10 @@ export function SolutionPlayer({ solution, initialBlocks, onBlocksUpdate }: Solu
               aria-label="Next step"
             >
               <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
-                <path fillRule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z" />
+                <path
+                  fillRule="evenodd"
+                  d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"
+                />
               </svg>
             </button>
           </div>
@@ -428,8 +486,8 @@ export function SolutionPlayer({ solution, initialBlocks, onBlocksUpdate }: Solu
                   onClick={() => setSpeed(s.speed)}
                   className={`px-2 py-1 text-xs font-medium transition-all ${
                     speed === s.speed
-                      ? 'bg-amber-500 text-white shadow-sm'
-                      : 'bg-transparent text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800'
+                      ? "bg-amber-500 text-white shadow-sm"
+                      : "bg-transparent text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800"
                   }`}
                 >
                   {s.label}
@@ -441,7 +499,7 @@ export function SolutionPlayer({ solution, initialBlocks, onBlocksUpdate }: Solu
       </div>
 
       {/* Keyboard hints */}
-      <p className="text-[11px] text-stone-400 dark:text-stone-500 flex items-center gap-1.5">
+      <p className="text-md text-stone-400 dark:text-stone-500 flex items-center gap-1.5">
         <kbd className="inline-flex items-center justify-center h-4 min-w-[16px] px-1 rounded text-[10px] font-mono bg-stone-100 dark:bg-stone-800 border border-stone-300 dark:border-stone-600 text-stone-500 dark:text-stone-400">
           &#8592;
         </kbd>
@@ -452,7 +510,9 @@ export function SolutionPlayer({ solution, initialBlocks, onBlocksUpdate }: Solu
         <kbd className="inline-flex items-center justify-center h-4 min-w-[20px] px-1 rounded text-[10px] font-mono bg-stone-100 dark:bg-stone-800 border border-stone-300 dark:border-stone-600 text-stone-500 dark:text-stone-400">
           Space
         </kbd>
-        <span className="text-stone-400 dark:text-stone-500">to play/pause</span>
+        <span className="text-stone-400 dark:text-stone-500">
+          to play/pause
+        </span>
       </p>
     </div>
   );
